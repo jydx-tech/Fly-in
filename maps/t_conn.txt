@@ -1,0 +1,6 @@
+nb_drones: 2
+start_hub: s 0 0 [color=green]
+hub: a 1 1 [color=blue]
+end_hub: e 2 2 [color=red]
+connection: s-a
+connection: a-e [max_link_capacity=2]
