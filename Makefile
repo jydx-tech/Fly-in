@@ -22,4 +22,10 @@ lint-strict:
 	flake8 .
 	mypy . --strict
 
+test-invalid:
+	@for file in maps/invalid/*; do \
+		echo "=== Test de $$file ==="; \
+		$(PYTHON) main.py "$$file" || true; \
+	done
+
 .PHONY: install run debug clean lint lint-strict

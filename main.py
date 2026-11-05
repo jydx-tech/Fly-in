@@ -6,7 +6,7 @@
 #  By: jdenaux <jdenaux@student.42.fr>           +#+  +:+       +#+         #
 #                                              +#+#+#+#+#+   +#+            #
 #  Created: 2026/10/26 09:53:28 by jdenaux         #+#    #+#               #
-#  Updated: 2026/10/30 10:55:22 by jdenaux         ###   ########.fr        #
+#  Updated: 2026/11/03 12:13:01 by jdenaux         ###   ########.fr        #
 #                                                                           #
 # ************************************************************************* #
 
@@ -22,24 +22,22 @@ from fly_in.simulation import Simulation
 
 
 def main() -> None:
-    """Parse the map given on the command line."""
+    """Run the simulation on the map given on the command line."""
     if len(sys.argv) != 2:
         print("Usage: python3 main.py <map_file>", file=sys.stderr)
         sys.exit(1)
     try:
         nb_drones, network = MapParser(sys.argv[1]).parse()
+        simulation = Simulation(network, nb_drones)
     except FlyInError as error:
         print(f"Error: {error}", file=sys.stderr)
         sys.exit(1)
-    Display().show_zones(network)
-    Display().show_connections(network)
-    # GraphicalDisplay(network).run()
-    simulation = Simulation(network, nb_drones)
-    turns = 0
-    while not simulation.is_finished() and turns < 100:
+    display = Display()
+    display.show_zones(network)
+    display.show_connections(network)
+    while not simulation.is_finished():
         print(" ".join(simulation.play_turn()))
-        turns += 1
-    print(f"turns: {turns}")
+    GraphicalDisplay(network, simulation, display).run()
 
 
 if __name__ == "__main__":

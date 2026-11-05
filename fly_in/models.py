@@ -6,7 +6,7 @@
 #  By: jdenaux <jdenaux@student.42.fr>           +#+  +:+       +#+         #
 #                                              +#+#+#+#+#+   +#+            #
 #  Created: 2026/10/26 10:34:38 by jdenaux         #+#    #+#               #
-#  Updated: 2026/10/30 13:18:48 by jdenaux         ###   ########.fr        #
+#  Updated: 2026/11/04 15:42:17 by jdenaux         ###   ########.fr        #
 #                                                                           #
 # ************************************************************************* #
 
@@ -122,14 +122,6 @@ class Connection:
         raise ValueError("No zone at the end of this connection")
 
 
-class DroneState(Enum):
-    """State of a drone: waiting in a zone, in flight or arrived."""
-
-    WAITING = "waiting"
-    IN_FLIGHT = "in_flight"
-    ARRIVED = "arrived"
-
-
 class Drone:
     """Drone"""
 
@@ -141,13 +133,9 @@ class Drone:
             start: Zone where the drone begins.
         """
         self.id = drone_id
-        self.position = start
-        self.path: list[Zone] = []
-        self.state = DroneState.WAITING
         self.step = 0
-        self.destination: Zone | None = None
-        self.link: Connection | None = None
         self.schedule: list[tuple[Zone, int]] = []
+        self.moves_by_turn: dict[int, str] = {}
 
     @property
     def name(self) -> str:

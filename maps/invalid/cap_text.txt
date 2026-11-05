@@ -1,0 +1,4 @@
+nb_drones: 1
+start_hub: s 0 0
+hub: a 1 0 [max_drones=x]
+end_hub: e 2 0

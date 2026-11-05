@@ -6,7 +6,7 @@
 #  By: jdenaux <jdenaux@student.42.fr>           +#+  +:+       +#+         #
 #                                              +#+#+#+#+#+   +#+            #
 #  Created: 2026/10/29 13:32:06 by jdenaux         #+#    #+#               #
-#  Updated: 2026/10/30 13:12:20 by jdenaux         ###   ########.fr        #
+#  Updated: 2026/11/04 12:16:01 by jdenaux         ###   ########.fr        #
 #                                                                           #
 # ************************************************************************* #
 
@@ -16,7 +16,7 @@ import heapq
 
 from fly_in.network import Network
 from fly_in.errors import UnsolvableError
-from fly_in.models import Zone
+from fly_in.models import Zone, ZoneType
 from fly_in.reservations import Reservations
 
 
@@ -32,7 +32,7 @@ class PathFinder:
         self._network = network
 
     def timed_path(
-            self, reservations: Reservations, horizon: int = 500
+            self, reservations: Reservations, horizon: int
     ) -> list[tuple[Zone, int]]:
         """Return the fasted path start to end.
 
@@ -44,11 +44,12 @@ class PathFinder:
         """
         start = self._network.start
         end = self._network.end
-        heap: list[tuple[int, str]] = [(0, start.name)]
+        heap: list[tuple[int, int, str]] = [(0, 0, start.name)]
         visited: set[tuple[str, int]] = set()
         parent: dict[tuple[str, int], tuple[str, int]] = {}
+        best: dict[tuple[str, int], int] = {(start.name, 0): 0}
         while heap:
-            turn, name = heapq.heappop(heap)
+            turn, penality, name = heapq.heappop(heap)
             if (name, turn) in visited:
                 continue
             visited.add((name, turn))
@@ -61,25 +62,34 @@ class PathFinder:
             if turn >= horizon:
                 continue
             zone = self._network.get_zone(name)
+            state = (name, turn + 1)
             if (reservations.zone_is_free(zone, turn + 1)
-                    and (name, turn + 1) not in parent):
-                parent[(name, turn + 1)] = (name, turn)
-                heapq.heappush(heap, (turn + 1, name))
+                    and (state not in best or penality < best[state])):
+                best[state] = penality
+                parent[state] = (name, turn)
+                heapq.heappush(heap, (turn + 1, penality, name))
             for nxt in self._network.neighbors(zone):
+                arrival = turn + nxt.zone_type.cost
                 link = self._network.connection_between(zone, nxt)
+                if nxt.zone_type is ZoneType.PRIORITY:
+                    new_penality = penality
+                else:
+                    new_penality = penality + 1
+                state = (nxt.name, arrival)
                 if (reservations.link_is_free(link, turn + 1)
-                        and reservations.zone_is_free(nxt, turn + 1)
-                        and (nxt.name, turn + 1) not in parent):
-                    parent[(nxt.name, turn + 1)] = (name, turn)
-                    heapq.heappush(heap, (turn + 1, nxt.name))
+                        and reservations.zone_is_free(nxt, arrival)
+                        and (state not in best or new_penality < best[state])):
+                    best[state] = new_penality
+                    parent[state] = (name, turn)
+                    heapq.heappush(heap, (arrival, new_penality, nxt.name))
         raise UnsolvableError("no path from start to end")
 
     def reserve_path(
             self, reservations: Reservations,
             path: list[tuple[Zone, int]]) -> None:
         """Reserve the zones and links used by a timed path."""
-        for (zone_a, _), (zone_b, turn) in zip(path, path[1:]):
-            reservations.reserve_zone(zone_b, turn)
+        for (zone_a, t_a), (zone_b, t_b) in zip(path, path[1:]):
+            reservations.reserve_zone(zone_b, t_b)
             if zone_a is not zone_b:
                 link = self._network.connection_between(zone_a, zone_b)
-                reservations.reserve_link(link, turn)
+                reservations.reserve_link(link, t_a + 1)
